@@ -1,0 +1,124 @@
+import pygame
+from pygame import *
+import random
+
+pygame.init()
+WIDTH = 800
+HEIGHT = 600
+window = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Пинг-понг")
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BLUE = (135, 206, 235)
+
+try:
+    tenis_ball_img = pygame.image.load('tenis_ball.png').convert_alpha()
+    racket_img = pygame.image.load('racket.png').convert_alpha()
+except FileNotFoundError as e:
+    print(f"Ошибка загрузки изображения: {e}")
+    print("Убедитесь, что файлы tenis_ball.png и racket.png находятся в той же папке, что и скрипт.")
+    pygame.quit()
+    exit()
+
+class Ball:
+    def __init__(self):
+        self.image = tenis_ball_img 
+        self.rect = self.image.get_rect()  
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)  
+        self.dx = 3
+        self.dy = 3
+
+    def update(self):
+        self.rect.x += self.dx
+        self.rect.y += self.dy
+
+        if self.rect.top <= 0 or self.rect.bottom >= HEIGHT:
+            self.dy *= -1
+
+    def reset(self):
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.dx = random.choice([-3, 3])
+        self.dy = random.choice([-3, 3])
+
+    def draw(self):
+        window.blit(self.image, self.rect)  
+
+class Paddle:
+    def __init__(self, x, y, image):
+        self.image = image 
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.speed = 5
+
+    def update_left(self, keys):
+        if keys[K_w] and self.rect.top > 0:
+            self.rect.y -= self.speed
+        if keys[K_s] and self.rect.bottom < HEIGHT:
+            self.rect.y += self.speed
+
+    def update_right(self, keys):
+        if keys[K_UP] and self.rect.top > 0:
+            self.rect.y -= self.speed
+        if keys[K_DOWN] and self.rect.bottom < HEIGHT:
+            self.rect.y += self.speed
+
+    def draw(self):
+        window.blit(self.image, self.rect)
+
+def show_game_over():
+    font = pygame.font.SysFont(None, 72)
+    game_over_text = font.render("ПРОИГРЫШ!", True, WHITE)
+    font_small = pygame.font.SysFont(None, 36)
+    restart_text = font_small.render("Нажмите ПРОБЕЛ для перезапуска", True, WHITE)
+
+    window.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2,
+                             HEIGHT // 2 - 50))
+    window.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2,
+                           HEIGHT // 2 + 20))
+
+ball = Ball()
+paddle1 = Paddle(50, HEIGHT // 2 - 50, racket_img)  # Левая ракетка
+paddle2 = Paddle(WIDTH - 60, HEIGHT // 2 - 50, racket_img)  # Правая ракетка
+
+game_over = False
+
+run = True
+while run:
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            run = False
+        if event.type == KEYDOWN and game_over:
+            if event.key == K_SPACE:
+                game_over = False
+                ball.reset()
+
+    keys = pygame.key.get_pressed()
+    if not game_over:
+        paddle1.update_left(keys)  
+        paddle2.update_right(keys)  
+
+    ball.update()
+
+    if ball.rect.colliderect(paddle1.rect):
+        ball.dx *= -1
+    elif ball.rect.colliderect(paddle2.rect):
+        ball.dx *= -1
+
+    if ball.rect.left <= 0 or ball.rect.right >= WIDTH:
+        game_over = True
+
+    window.fill(BLUE)
+
+    if game_over:
+        show_game_over() 
+    else:
+        paddle1.draw()
+        paddle2.draw()
+        ball.draw()
+
+    pygame.display.update()
+    pygame.time.Clock().tick(60)
+
+pygame.quit()
