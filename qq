@@ -122,3 +122,4 @@ while run:
     pygame.time.Clock().tick(60)
 
 pygame.quit()
+pygame.quit()
